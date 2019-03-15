@@ -45,7 +45,7 @@ public class AppConfig {
 	 */
 	/*
 	 * @Bean DirectExchange exchange() { return new
-	 * DirectExchange("onepdl.exchange"); }
+	 * DirectExchange("order.exchange"); }
 	 */
 
 	@Bean
