@@ -1,0 +1,41 @@
+spring:
+  profiles: default
+  application:
+    name: mongo-rabbit-service
+  data:
+    mongodb:
+      database: onepdl
+      port: 27017
+      host: localhost
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+logging:
+  level:
+    root: INFO
+server:
+  port: 8099
+  
+order.event.queue: order.queue
+order.dead-letter.queue: order.dead-letter.queue
+
+---
+
+spring:
+  profiles: openshift
+  application:
+    name: mongo-rabbit-service
+  data:
+    mongodb:
+      uri: mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@mongodb/{MONGODB_DATABASE}
+logging:
+  level:
+    root: INFO  
