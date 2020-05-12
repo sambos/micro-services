@@ -24,8 +24,8 @@ logging:
 server:
   port: 8099
   
-order.event.queue: orders.queue
-order.dead-letter.queue: orders.dead-letter.queue
+order.event.queue: order.queue
+order.dead-letter.queue: order.dead-letter.queue
 
 ---
 

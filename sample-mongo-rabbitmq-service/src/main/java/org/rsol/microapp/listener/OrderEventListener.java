@@ -39,7 +39,7 @@ public class OrderEventListener {
 	 * key = "order.event" ))
 	 */
 	//@RabbitListener(queues = "${order.event.queue}")
-	@RabbitListener(queues = "#{queue.name}")
+	//@RabbitListener(queues = "#{queue.name}")
 	public void receiveEvent(Message message) {
 		System.out.println("Received Message!" + message);
 		String body = new String(message.getBody());
@@ -52,6 +52,19 @@ public class OrderEventListener {
 			throw new RuntimeException("Message could not be read ", e);
 		}
 	}
+	
+	public void receiveEvent2(Object message) {
+		System.out.println("Received Message 2!" + message);
+		String body = new String("");
+		try {
+			if (body != null && body.length() > 0) {
+				service.saveOrder(getModel(body));
+			}
+		} catch (Exception e) {
+			log.info("Error occurred while processing! ", e.getMessage());
+			throw new RuntimeException("Message could not be read ", e);
+		}
+	}	
 	
 	private OrderModel getModel(String json) throws Exception {
 		System.out.println(parseJson(json));

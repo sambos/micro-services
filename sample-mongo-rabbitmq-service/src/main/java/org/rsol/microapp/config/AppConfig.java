@@ -18,10 +18,10 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-@Configuration
-@Log4j2
-@EnableRabbit
-@EnableSwagger2
+//@Configuration
+//@Log4j2
+//@EnableRabbit
+//@EnableSwagger2
 public class AppConfig {
 
 	@Value("${order.event.queue}")
