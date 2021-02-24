@@ -2,41 +2,73 @@ package rsol.example.jsch.config;
 
 import java.util.Map;
 
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.kafka.core.DefaultKafkaProducerFactory;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.web.client.RestTemplate;
 
-import rsol.example.kafka.producer.service.MyProducerInterceptor;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import com.boeing.onepdl.spm.autopilot.SvgAutoPilotTemplate;
+import com.boeing.onepdl.spm.autopilot.session.DefaultAPSessionFactory;
+import com.boeing.onepdl.spm.autopilot.session.SessionFactory;
+
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import lombok.extern.log4j.Log4j2;
 
 @Configuration
-@EnableSwagger2
+@Log4j2
 public class AppConfig {
 
 	@Value("${kafka.topic.name}") 
 	private String topic;
 	
 
+	@Value("${rsol.host:}")
+	private String host;
+	
+	private final int port = 22;
+	
+	@Value("${rsol.user:}")
+	private String user;
+	
+	@Value("${rsol.secret:}")
+	private String secret;
+	
+	@Value("${rsol.secretkey:}")
+	private String secretKey;
+	
 	/**
 	 * Method used for Controller to be exposed on Swaggers!
 	 * 
 	 * @return
 	 */
 	@Bean
-	public Docket api() {
-		return new Docket(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.any())
-				.paths(PathSelectors.any()).build();
+	    public OpenAPI openAPI() {
+		return new OpenAPI()
+			.components(new Components())
+			.info(new Info().title("SSH Example API"));
+	    }
+	@Bean
+	public RestTemplate restTemplate() {
+		return new RestTemplate();
 	}
+	
+	public SessionFactory sshSessionFactory(){
+		log.info("Initializing session factory with {}@{}:{} and pk: {}", user, host, port, secretKey);
+		DefaultSSHSessionFactory factory = new DefaultSSHSessionFactory();
+		factory.setHost(host);
+		factory.setPort(port);
+		factory.setPassword(secret);
+		factory.setUser(user);
+		factory.setSecretKey(secretKey);
+		return factory;
+	}
+	
+	@Bean
+	public SvgAutoPilotTemplate autopilotTemplate() {
+		return new SSHCommandTemplate(sshSessionFactory());
 
+	}	
     
 }
