@@ -1,99 +1,82 @@
 package rsol.example.jsch.config;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.File;
 
-import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
-import com.boeing.onepdl.spm.autopilot.session.APSession;
-import com.boeing.onepdl.spm.autopilot.session.SessionFactory;
-import com.google.common.io.CharStreams;
-import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSch;
 
 import lombok.extern.log4j.Log4j2;
 
-
-
-@Log4J2
-public class SSHCommandTemplate {
-	protected final SessionFactory sessionFactory;
-	private APSession session;
-	private final String ap_command_template = "/usr/bin/nohup %s >/dev/null 2>&1 & echo $!";
-
+@Log4j2
+public class DefaultSSHSessionFactory implements SessionFactory {
 	
-	public SSHCommandTemplate(SessionFactory sessionFactory) {
-		Assert.notNull(sessionFactory, "sessionFactory must not be null");
-		this.sessionFactory = sessionFactory;
-	}
+	private final JSch jsch;
 	
-	public SessionFactory getSessionFactory() {
-		return this.sessionFactory;
+	private String host;
+	private int port;
+	private String user;
+	private String secretKey;
+	private String secret;
+	
+	
+	public DefaultAPSessionFactory() {
+		jsch = new JSch();
 	}
 
-	private APSession getSession() {
-
-		if (session != null && session.isOpen()) {
-			return session;
-		}
-
-		session = this.sessionFactory.getSession();
-		return session;
-	}
-		
-	/**
-	 * execute command
-	 * @param path command path
-	 * @return List<String> returnCodes for each command
-	 */
-	public List<String> execCommands(String path, String[] commands) throws Exception {	
-		List<String> returnCodes = new ArrayList<String>();
-		for(String command : commands) {
-			returnCodes.add(execCommand(path, command));	
-		}
-		return returnCodes;
+	public void setHost(String host) {
+		this.host = host;
 	}
 	
-	/**
-	 * execute command
-	 * @param path command path
-	 * @return returnCode for command
-	 */
-	public String execCommand(String path, String command) throws Exception {
-		
-		try(APSession session = getSession()){
-			return exec(path, command, (ChannelExec) session.getChannel());
-		}	
+	public void setPort(int port) {
+		this.port = port;
 	}
 
-	private String exec(String path, String command, ChannelExec channel) throws Exception {
+	public void setUser(String user) {
+		this.user = user;
+	}
+	
+	public void setPassword(String password) {
+		this.secret = password;
+	}
+	
+	public void setSecretKey(String key) {
+		this.secretKey = key;
+	}
+	
+	@Override
+	public APSession getSession() {
+		return initJschSession();
+	}
 
-		Assert.notNull(path, " command path must not be null");
-		
-		command = path + "/" + command;
-		command = String.format(ap_command_template, command);
+	private APSession initJschSession() {
+		APSession session=null;
 		try {
-
-			log.info("Executing command [{}] on {}@{}:{} ", command, session.getUserName(), session.getHost(),
-					session.getPort());
-
-			channel.setCommand(command);
-			channel.setPty(false);
-			channel.setInputStream(null);
-			channel.setErrStream(System.err);
-			InputStream in = channel.getInputStream();
-			channel.connect();
-
-			String result = CharStreams.toString(new InputStreamReader(in));
-			log.info("Result of command {} : {}", command, result);
-
-			in.close();
+			com.jcraft.jsch.Session jschSession = this.jsch.getSession(this.user, this.host, this.port);
 			
-			return result;
+			if(!StringUtils.isEmpty(this.secretKey) && new File(this.secretKey).exists()) {
+				log.info("Auth key specified.. : " + this.secretKey);
+				this.jsch.addIdentity(this.secretKey);
+			}else {
+				log.info("pwd specified..");
+				jschSession.setPassword(this.secret);
+			}
+			
+			java.util.Properties config = new java.util.Properties();
+			config.put("StrictHostKeyChecking", "no");
+			jschSession.setConfig(config);
+			session = new APSession(jschSession);
+			session.connect();
+			return session;
 		} catch (Exception e) {
-			throw new APCommandFailedException("Failed to execute command", command, e);
+			try {
+				if (session != null) {
+					session.close();
+				}
+			} catch (Exception e1) {
+				throw new IllegalStateException("failed to close JSch Session", e1);
+			}
+			throw new IllegalStateException("failed to create JSch Session", e);
 		}
 	}
-
 }
