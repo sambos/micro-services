@@ -4,7 +4,7 @@ spring:
     name: mongo-rabbit-service
   data:
     mongodb:
-      database: onepdl
+      database: db
       port: 27017
       host: localhost
   rabbitmq:
